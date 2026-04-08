@@ -52,6 +52,7 @@ public class AuthService {
         member.setName(request.name());
         member.setUsername(username);
         member.setEmail(email);
+        member.setPhone(normalizeOptionalValue(request.phone()));
         member.setPasswordHash(passwordEncoder.encode(request.password()));
         member.setLoginCount(0);
         member.setLastLoginAt(null);
@@ -78,14 +79,23 @@ public class AuthService {
     }
 
     public SessionResponse registerNutritionist(NutritionistRegisterRequest request) {
-        if (nutritionistRepository.findByEmailIgnoreCase(request.email()).isPresent()) {
+        String email = request.email().trim().toLowerCase();
+        String username = request.username().trim().toLowerCase();
+
+        if (nutritionistRepository.findByEmailIgnoreCase(email).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Nutritionist email already exists");
+        }
+
+        if (nutritionistRepository.findByUsernameIgnoreCase(username).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Nutritionist username already exists");
         }
 
         Nutritionist nutritionist = new Nutritionist();
         nutritionist.setName(request.name());
-        nutritionist.setUsername(request.username());
-        nutritionist.setEmail(request.email());
+        nutritionist.setUsername(username);
+        nutritionist.setEmail(email);
+        nutritionist.setPhone(normalizeOptionalValue(request.phone()));
+        nutritionist.setExperience(request.experience());
         nutritionist.setPasswordHash(passwordEncoder.encode(request.password()));
         nutritionist.setSpecialization(request.specialization());
         nutritionist.setLoginCount(0);
@@ -95,7 +105,10 @@ public class AuthService {
     }
 
     public SessionResponse loginNutritionist(AuthRequest request) {
-        Nutritionist nutritionist = nutritionistRepository.findByEmailIgnoreCase(request.email())
+        String identifier = request.email().trim();
+
+        Nutritionist nutritionist = nutritionistRepository.findByEmailIgnoreCase(identifier)
+            .or(() -> nutritionistRepository.findByUsernameIgnoreCase(identifier))
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nutritionist not found"));
 
         if (!passwordEncoder.matches(request.password(), nutritionist.getPasswordHash())) {
@@ -134,7 +147,9 @@ public class AuthService {
                 member.getName(),
                 member.getUsername(),
                 member.getEmail(),
+                member.getPhone(),
                 member.getRole().name(),
+                null,
                 null,
                 member.getLoginCount(),
                 accessToken
@@ -146,10 +161,21 @@ public class AuthService {
             nutritionist.getName(),
             nutritionist.getUsername(),
             nutritionist.getEmail(),
+            nutritionist.getPhone(),
             nutritionist.getRole().name(),
             nutritionist.getSpecialization(),
+            nutritionist.getExperience(),
             nutritionist.getLoginCount(),
             accessToken
         );
+    }
+
+    private String normalizeOptionalValue(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

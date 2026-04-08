@@ -73,17 +73,34 @@ Authorization: Bearer <accessToken>
 - This scaffold is designed as a separate backend repo beside the frontend repo.
 - It uses empty/real database-backed records only, not seeded demo data.
 
-## Local MySQL Setup
+## Local Startup
 
-Recommended one-time setup:
+Default local profile:
+This now uses MySQL, so data is stored in the `poshan` schema and visible in MySQL Workbench.
 
-1. Copy `src/main/resources/application-local.yml.example`
-2. Rename the copy to `src/main/resources/application-local.yml`
-3. Put your MySQL username/password in that local file
-4. Start the backend with:
+1. If needed, set your local MySQL credentials:
+
+```powershell
+$env:MYSQL_USERNAME="root"
+$env:MYSQL_PASSWORD="your_password"
+```
+
+2. Start the backend with:
 
 ```powershell
 .\start-local.ps1
 ```
 
-`application-local.yml` is gitignored, so your password stays local.
+By default it connects to:
+
+- host: `localhost`
+- port: `3306`
+- database: `poshan`
+
+## Optional H2 Startup
+
+If you want the lightweight file-based database instead of MySQL, run:
+
+```powershell
+mvn spring-boot:run "-Dspring-boot.run.profiles=h2local"
+```

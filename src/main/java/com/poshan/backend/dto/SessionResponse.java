@@ -5,8 +5,10 @@ public record SessionResponse(
     String name,
     String username,
     String email,
+    String phone,
     String role,
     String specialization,
+    Integer experience,
     Integer loginCount,
     String accessToken
 ) {
