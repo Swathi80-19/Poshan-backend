@@ -29,7 +29,7 @@ public class NutritionistController {
 
     @GetMapping("/me/patients")
     public List<NutritionistPatientResponse> getPatients() {
-        return nutritionistService.getPatients();
+        return nutritionistService.getPatients(authContext.requireNutritionistId());
     }
 
     @GetMapping("/me/dashboard")

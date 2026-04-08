@@ -1,6 +1,7 @@
 package com.poshan.backend.service;
 
 import com.poshan.backend.dto.DashboardResponse;
+import com.poshan.backend.entity.Appointment;
 import com.poshan.backend.dto.NutritionistPatientResponse;
 import com.poshan.backend.dto.NutritionistSummaryResponse;
 import com.poshan.backend.entity.Member;
@@ -16,6 +17,7 @@ import com.poshan.backend.repository.ReportRepository;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -61,10 +63,17 @@ public class NutritionistService {
             .toList();
     }
 
-    public List<NutritionistPatientResponse> getPatients() {
-        return memberRepository.findAll().stream()
+    public List<NutritionistPatientResponse> getPatients(Long nutritionistId) {
+        List<Appointment> appointments = appointmentRepository.findAllByNutritionistIdOrderByScheduledAtAsc(nutritionistId);
+        Set<Long> memberIds = appointments.stream()
+            .map(appointment -> appointment.getMember().getId())
+            .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+
+        return memberIds.stream()
+            .map(memberId -> memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Member not found")))
             .filter(this::hasRealData)
-            .map(this::toPatientResponse)
+            .map(member -> toPatientResponse(member, appointments))
             .toList();
     }
 
@@ -74,10 +83,12 @@ public class NutritionistService {
 
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("nutritionist", nutritionist.getName());
-        summary.put("patients", getPatients().size());
-        summary.put("appointments", appointmentRepository.findAllByNutritionistIdOrderByScheduledAtAsc(nutritionistId).size());
+        List<Appointment> appointments = appointmentRepository.findAllByNutritionistIdOrderByScheduledAtAsc(nutritionistId);
+        List<NutritionistPatientResponse> patients = getPatients(nutritionistId);
+        summary.put("patients", patients.size());
+        summary.put("appointments", appointments.size());
         summary.put("reports", reportRepository.findAllByNutritionistIdOrderBySessionDateDesc(nutritionistId).size());
-        return new DashboardResponse(summary, getPatients());
+        return new DashboardResponse(summary, patients);
     }
 
     private boolean hasRealData(Member member) {
@@ -87,14 +98,17 @@ public class NutritionistService {
             || !appointmentRepository.findAllByMemberIdOrderByScheduledAtAsc(member.getId()).isEmpty();
     }
 
-    private NutritionistPatientResponse toPatientResponse(Member member) {
+    private NutritionistPatientResponse toPatientResponse(Member member, List<Appointment> appointments) {
         MemberProfile profile = memberProfileRepository.findByMemberId(member.getId()).orElse(null);
+        int sessions = (int) appointments.stream()
+            .filter(appointment -> appointment.getMember().getId().equals(member.getId()))
+            .count();
         return new NutritionistPatientResponse(
             member.getId(),
             member.getName(),
             profile != null ? profile.getAge() : null,
             profile != null ? profile.getGoalFocus() : null,
-            appointmentRepository.findAllByMemberIdOrderByScheduledAtAsc(member.getId()).size(),
+            sessions,
             foodLogRepository.findAllByMemberIdOrderByLoggedAtDesc(member.getId()).size(),
             activityLogRepository.findAllByMemberIdOrderByLoggedAtDesc(member.getId()).size()
         );

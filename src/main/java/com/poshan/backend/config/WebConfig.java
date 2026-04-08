@@ -17,9 +17,16 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-            .allowedOrigins(corsProperties.getAllowedOrigins().toArray(String[]::new))
+        var registration = registry.addMapping("/api/**")
             .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             .allowedHeaders("*");
+
+        if (!corsProperties.getAllowedOrigins().isEmpty()) {
+            registration.allowedOrigins(corsProperties.getAllowedOrigins().toArray(String[]::new));
+        }
+
+        if (!corsProperties.getAllowedOriginPatterns().isEmpty()) {
+            registration.allowedOriginPatterns(corsProperties.getAllowedOriginPatterns().toArray(String[]::new));
+        }
     }
 }
