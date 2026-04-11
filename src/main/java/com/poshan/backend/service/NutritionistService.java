@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -69,10 +70,14 @@ public class NutritionistService {
             .map(appointment -> appointment.getMember().getId())
             .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
 
+        memberIds.addAll(memberProfileRepository.findAllByAssignedNutritionistId(nutritionistId).stream()
+            .map(profile -> profile.getMember().getId())
+            .collect(Collectors.toCollection(java.util.LinkedHashSet::new)));
+
         return memberIds.stream()
             .map(memberId -> memberRepository.findById(memberId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Member not found")))
-            .filter(this::hasRealData)
+            .filter(member -> hasRealData(member, nutritionistId))
             .map(member -> toPatientResponse(member, appointments))
             .toList();
     }
@@ -91,8 +96,9 @@ public class NutritionistService {
         return new DashboardResponse(summary, patients);
     }
 
-    private boolean hasRealData(Member member) {
-        return memberProfileRepository.findByMemberId(member.getId()).isPresent()
+    private boolean hasRealData(Member member, Long nutritionistId) {
+        MemberProfile profile = memberProfileRepository.findByMemberId(member.getId()).orElse(null);
+        return profile != null && profile.getAssignedNutritionist() != null && profile.getAssignedNutritionist().getId().equals(nutritionistId)
             || !foodLogRepository.findAllByMemberIdOrderByLoggedAtDesc(member.getId()).isEmpty()
             || !activityLogRepository.findAllByMemberIdOrderByLoggedAtDesc(member.getId()).isEmpty()
             || !appointmentRepository.findAllByMemberIdOrderByScheduledAtAsc(member.getId()).isEmpty();

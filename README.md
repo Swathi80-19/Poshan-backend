@@ -72,6 +72,7 @@ Authorization: Bearer <accessToken>
 
 - This scaffold is designed as a separate backend repo beside the frontend repo.
 - It uses empty/real database-backed records only, not seeded demo data.
+- Nutritionist accounts and member assignments are stored in MySQL, so the nutritionist workspace and member search use the same live records.
 
 ## Local Startup
 

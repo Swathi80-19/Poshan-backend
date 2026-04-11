@@ -4,15 +4,18 @@ import com.poshan.backend.dto.AppointmentRequest;
 import com.poshan.backend.dto.AppointmentResponse;
 import com.poshan.backend.entity.Appointment;
 import com.poshan.backend.entity.Member;
+import com.poshan.backend.entity.MemberProfile;
 import com.poshan.backend.entity.Nutritionist;
 import com.poshan.backend.enums.AppointmentMode;
 import com.poshan.backend.enums.AppointmentStatus;
 import com.poshan.backend.repository.AppointmentRepository;
 import com.poshan.backend.repository.MemberRepository;
+import com.poshan.backend.repository.MemberProfileRepository;
 import com.poshan.backend.repository.NutritionistRepository;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -20,18 +23,22 @@ public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final MemberRepository memberRepository;
+    private final MemberProfileRepository memberProfileRepository;
     private final NutritionistRepository nutritionistRepository;
 
     public AppointmentService(
         AppointmentRepository appointmentRepository,
         MemberRepository memberRepository,
+        MemberProfileRepository memberProfileRepository,
         NutritionistRepository nutritionistRepository
     ) {
         this.appointmentRepository = appointmentRepository;
         this.memberRepository = memberRepository;
+        this.memberProfileRepository = memberProfileRepository;
         this.nutritionistRepository = nutritionistRepository;
     }
 
+    @Transactional
     public AppointmentResponse create(AppointmentRequest request) {
         Member member = memberRepository.findById(request.memberId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Member not found"));
@@ -47,7 +54,9 @@ public class AppointmentService {
         appointment.setMode(parseMode(request.mode()));
         appointment.setStatus(AppointmentStatus.UPCOMING);
         appointment.setNotes(request.notes());
-        return toResponse(appointmentRepository.save(appointment));
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+        assignNutritionistToMemberProfile(member, nutritionist);
+        return toResponse(savedAppointment);
     }
 
     public List<AppointmentResponse> getForNutritionist(Long nutritionistId, String status) {
@@ -101,5 +110,12 @@ public class AppointmentService {
         }
 
         return AppointmentMode.VIDEO;
+    }
+
+    private void assignNutritionistToMemberProfile(Member member, Nutritionist nutritionist) {
+        MemberProfile profile = memberProfileRepository.findByMemberId(member.getId()).orElseGet(MemberProfile::new);
+        profile.setMember(member);
+        profile.setAssignedNutritionist(nutritionist);
+        memberProfileRepository.save(profile);
     }
 }

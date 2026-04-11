@@ -1,7 +1,8 @@
 package com.poshan.backend.entity;
 
-import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Entity;
 import jakarta.persistence.OneToOne;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,6 +15,10 @@ public class MemberProfile extends BaseEntity {
     @OneToOne
     @JoinColumn(name = "member_id", nullable = false, unique = true)
     private Member member;
+
+    @ManyToOne
+    @JoinColumn(name = "nutritionist_id")
+    private Nutritionist assignedNutritionist;
 
     private Integer age;
     private String gender;

@@ -11,6 +11,7 @@ import com.poshan.backend.entity.ActivityLog;
 import com.poshan.backend.entity.FoodLog;
 import com.poshan.backend.entity.Member;
 import com.poshan.backend.entity.MemberProfile;
+import com.poshan.backend.entity.Nutritionist;
 import com.poshan.backend.repository.ActivityLogRepository;
 import com.poshan.backend.repository.AppointmentRepository;
 import com.poshan.backend.repository.AuthTokenRepository;
@@ -167,9 +168,12 @@ public class MemberService {
     }
 
     private MemberProfileResponse toProfileResponse(MemberProfile profile) {
+        Nutritionist assignedNutritionist = profile.getAssignedNutritionist();
         return new MemberProfileResponse(
             profile.getMember().getId(),
             profile.getMember().getName(),
+            assignedNutritionist != null ? assignedNutritionist.getId() : null,
+            assignedNutritionist != null ? assignedNutritionist.getName() : null,
             profile.getAge(),
             profile.getGender(),
             profile.getHeightCm(),

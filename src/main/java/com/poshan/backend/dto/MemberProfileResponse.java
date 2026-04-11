@@ -3,6 +3,8 @@ package com.poshan.backend.dto;
 public record MemberProfileResponse(
     Long memberId,
     String memberName,
+    Long assignedNutritionistId,
+    String assignedNutritionistName,
     Integer age,
     String gender,
     Double heightCm,
