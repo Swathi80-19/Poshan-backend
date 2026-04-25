@@ -1,0 +1,7 @@
+target
+.git
+.github
+.idea
+*.iml
+README.md
+start-local.ps1
