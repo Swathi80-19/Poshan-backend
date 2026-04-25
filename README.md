@@ -76,8 +76,8 @@ Authorization: Bearer <accessToken>
 
 ## Local Startup
 
-Default local profile:
-This now uses MySQL, so data is stored in the `poshan` schema and visible in MySQL Workbench.
+The backend now uses a single runtime config file: `src/main/resources/application.yml`.
+Local startup uses MySQL, so data is stored in the `poshan` schema and visible in MySQL Workbench.
 
 1. If needed, set your local MySQL credentials:
 
@@ -86,7 +86,20 @@ $env:MYSQL_USERNAME="root"
 $env:MYSQL_PASSWORD="your_password"
 ```
 
-2. Start the backend with:
+2. Configure SMTP for real email verification:
+
+```powershell
+$env:MAIL_HOST="smtp.gmail.com"
+$env:MAIL_PORT="587"
+$env:MAIL_USERNAME="your_email@gmail.com"
+$env:MAIL_PASSWORD="your_app_password"
+$env:MAIL_FROM="your_email@gmail.com"
+$env:FRONTEND_BASE_URL="http://localhost:5173"
+```
+
+For Gmail, use an App Password instead of your normal mailbox password.
+
+3. Start the backend with:
 
 ```powershell
 .\start-local.ps1
@@ -98,10 +111,9 @@ By default it connects to:
 - port: `3306`
 - database: `poshan`
 
-## Optional H2 Startup
+## Email Verification Flow
 
-If you want the lightweight file-based database instead of MySQL, run:
-
-```powershell
-mvn spring-boot:run "-Dspring-boot.run.profiles=h2local"
-```
+- New member and nutritionist accounts are created as unverified.
+- Registration sends a real email verification link through SMTP.
+- Login is blocked until that email link is opened successfully.
+- Users can request a fresh verification email from the frontend verification screen.

@@ -28,6 +28,10 @@ public class Member extends BaseEntity {
 
     private String passwordHash;
 
+    private Boolean emailVerified = false;
+
+    private LocalDateTime emailVerifiedAt;
+
     @Enumerated(EnumType.STRING)
     private Role role = Role.MEMBER;
 

@@ -27,6 +27,10 @@ public class Nutritionist extends BaseEntity {
 
     private String specialization;
 
+    private Boolean emailVerified = false;
+
+    private LocalDateTime emailVerifiedAt;
+
     @Enumerated(EnumType.STRING)
     private Role role = Role.NUTRITIONIST;
 

@@ -1,5 +1,7 @@
 package com.poshan.backend.dto;
 
+import java.time.LocalDateTime;
+
 public record SessionResponse(
     Long id,
     String name,
@@ -10,6 +12,8 @@ public record SessionResponse(
     String specialization,
     Integer experience,
     Integer loginCount,
-    String accessToken
+    String accessToken,
+    boolean emailVerified,
+    LocalDateTime emailVerifiedAt
 ) {
 }

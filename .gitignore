@@ -4,4 +4,7 @@ target/
 *.iml
 .DS_Store
 *.log
-src/main/resources/application-local.yml
+run-logs/
+data/
+*.mv.db
+*.trace.db

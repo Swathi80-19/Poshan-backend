@@ -1,14 +1,14 @@
-$localConfig = Join-Path $PSScriptRoot "src\main\resources\application-local.yml"
-
-if (-not (Test-Path $localConfig)) {
-  Write-Host "Local config not found." -ForegroundColor Yellow
-  Write-Host "Create it from src\main\resources\application-local.yml.example and add your MySQL username/password." -ForegroundColor Yellow
-  exit 1
-}
-
 Push-Location $PSScriptRoot
 try {
-  mvn spring-boot:run "-Dspring-boot.run.profiles=local"
+  if (-not (Test-Path Env:MYSQL_PASSWORD)) {
+    Write-Host "MYSQL_PASSWORD is not set." -ForegroundColor Yellow
+    Write-Host 'Run this first in PowerShell:' -ForegroundColor Yellow
+    Write-Host '$env:MYSQL_USERNAME="root"' -ForegroundColor Cyan
+    Write-Host '$env:MYSQL_PASSWORD="your_mysql_password"' -ForegroundColor Cyan
+    exit 1
+  }
+
+  mvn spring-boot:run
 } finally {
   Pop-Location
 }
