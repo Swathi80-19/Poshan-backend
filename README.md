@@ -111,6 +111,19 @@ By default it connects to:
 - port: `3306`
 - database: `poshan`
 
+## Render Postgres
+
+For Render deployment, use a Render Postgres database and set standard Spring datasource variables on the web service:
+
+```text
+SPRING_DATASOURCE_URL=jdbc:postgresql://<internal-host>:5432/<database-name>
+SPRING_DATASOURCE_USERNAME=<database-user>
+SPRING_DATASOURCE_PASSWORD=<database-password>
+CORS_ALLOWED_ORIGINS=https://<your-frontend>.onrender.com
+```
+
+Use the internal connection details from your Render Postgres dashboard when the web service and database are in the same region.
+
 ## Email Verification Flow
 
 - New member and nutritionist accounts are created as unverified.
