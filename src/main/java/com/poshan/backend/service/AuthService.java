@@ -182,10 +182,22 @@ public class AuthService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Verification link is invalid."));
 
         if (token.getUsedAt() != null) {
+            EmailVerificationResponse alreadyVerifiedResponse = buildAlreadyVerifiedResponse(token);
+
+            if (alreadyVerifiedResponse != null) {
+                return alreadyVerifiedResponse;
+            }
+
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This verification link has already been used.");
         }
 
         if (token.getExpiresAt() == null || token.getExpiresAt().isBefore(LocalDateTime.now())) {
+            EmailVerificationResponse alreadyVerifiedResponse = buildAlreadyVerifiedResponse(token);
+
+            if (alreadyVerifiedResponse != null) {
+                return alreadyVerifiedResponse;
+            }
+
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This verification link has expired. Request a new one.");
         }
 
@@ -371,6 +383,33 @@ public class AuthService {
                 "Verify your email before signing in. Request a new verification link if you need one."
             );
         }
+    }
+
+    private EmailVerificationResponse buildAlreadyVerifiedResponse(EmailVerificationToken token) {
+        if (token.getRole() == Role.MEMBER && token.getMember() != null && Boolean.TRUE.equals(token.getMember().getEmailVerified())) {
+            Member member = token.getMember();
+            return new EmailVerificationResponse(
+                "This email is already verified. You can sign in now.",
+                member.getEmail(),
+                Role.MEMBER.name(),
+                true,
+                member.getEmailVerifiedAt()
+            );
+        }
+
+        if (token.getRole() == Role.NUTRITIONIST && token.getNutritionist() != null
+            && Boolean.TRUE.equals(token.getNutritionist().getEmailVerified())) {
+            Nutritionist nutritionist = token.getNutritionist();
+            return new EmailVerificationResponse(
+                "This email is already verified. You can sign in now.",
+                nutritionist.getEmail(),
+                Role.NUTRITIONIST.name(),
+                true,
+                nutritionist.getEmailVerifiedAt()
+            );
+        }
+
+        return null;
     }
 
     private Role parseRole(String roleValue) {

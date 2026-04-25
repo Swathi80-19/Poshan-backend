@@ -55,7 +55,11 @@ public class VerificationEmailService {
         String roleLabel = role == Role.NUTRITIONIST ? "nutritionist" : "member";
         String verifyUrl = frontendBaseUrl.replaceAll("/+$", "")
             + "/verify-email?token="
-            + URLEncoder.encode(token, StandardCharsets.UTF_8);
+            + URLEncoder.encode(token, StandardCharsets.UTF_8)
+            + "&email="
+            + URLEncoder.encode(email, StandardCharsets.UTF_8)
+            + "&role="
+            + URLEncoder.encode(role.name(), StandardCharsets.UTF_8);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromAddress);
