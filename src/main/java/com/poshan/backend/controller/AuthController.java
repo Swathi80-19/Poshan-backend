@@ -10,8 +10,13 @@ import com.poshan.backend.dto.ResendVerificationRequest;
 import com.poshan.backend.dto.SessionResponse;
 import com.poshan.backend.dto.VerificationStatusResponse;
 import com.poshan.backend.service.AuthService;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,9 +30,14 @@ import org.springframework.web.bind.annotation.RequestHeader;
 public class AuthController {
 
     private final AuthService authService;
+    private final String frontendBaseUrl;
 
-    public AuthController(AuthService authService) {
+    public AuthController(
+        AuthService authService,
+        @org.springframework.beans.factory.annotation.Value("${app.frontend-base-url:http://localhost:5173}") String frontendBaseUrl
+    ) {
         this.authService = authService;
+        this.frontendBaseUrl = frontendBaseUrl;
     }
 
     @PostMapping("/members/register")
@@ -61,6 +71,23 @@ public class AuthController {
         return authService.verifyEmail(request);
     }
 
+    @GetMapping("/verify-email-link")
+    public ResponseEntity<Void> verifyEmailLink(@RequestParam String token) {
+        try {
+            EmailVerificationResponse response = authService.verifyEmail(new EmailVerificationRequest(token));
+            String redirectUrl = frontendBaseUrl.replaceAll("/+$", "")
+                + "/verify-email?verified=1"
+                + "&email=" + encode(response.email())
+                + "&role=" + encode(response.role())
+                + "&message=" + encode(response.message());
+            return ResponseEntity.status(302).location(URI.create(redirectUrl)).build();
+        } catch (ResponseStatusException exception) {
+            String redirectUrl = frontendBaseUrl.replaceAll("/+$", "")
+                + "/verify-email?error=" + encode(exception.getReason());
+            return ResponseEntity.status(302).location(URI.create(redirectUrl)).build();
+        }
+    }
+
     @PostMapping("/resend-verification")
     public AuthRegistrationResponse resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
         return authService.resendVerification(request);
@@ -72,5 +99,9 @@ public class AuthController {
         @RequestParam String role
     ) {
         return authService.getVerificationStatus(email, role);
+    }
+
+    private String encode(String value) {
+        return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
     }
 }

@@ -25,7 +25,7 @@ class AuthControllerErrorHandlingTest {
     @BeforeEach
     void setUp() {
         authService = mock(AuthService.class);
-        mockMvc = standaloneSetup(new AuthController(authService))
+        mockMvc = standaloneSetup(new AuthController(authService, "http://localhost:5173"))
             .setControllerAdvice(new ApiExceptionHandler())
             .build();
     }

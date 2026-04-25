@@ -23,6 +23,7 @@ public class VerificationEmailService {
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
     private final EmailVerificationProperties verificationProperties;
     private final String frontendBaseUrl;
+    private final String backendBaseUrl;
     private final String mailHost;
     private final String mailUsername;
 
@@ -30,12 +31,14 @@ public class VerificationEmailService {
         ObjectProvider<JavaMailSender> mailSenderProvider,
         EmailVerificationProperties verificationProperties,
         @org.springframework.beans.factory.annotation.Value("${app.frontend-base-url:http://localhost:5173}") String frontendBaseUrl,
+        @org.springframework.beans.factory.annotation.Value("${app.backend-base-url:http://localhost:8080}") String backendBaseUrl,
         @org.springframework.beans.factory.annotation.Value("${spring.mail.host:}") String mailHost,
         @org.springframework.beans.factory.annotation.Value("${spring.mail.username:}") String mailUsername
     ) {
         this.mailSenderProvider = mailSenderProvider;
         this.verificationProperties = verificationProperties;
         this.frontendBaseUrl = frontendBaseUrl;
+        this.backendBaseUrl = backendBaseUrl;
         this.mailHost = mailHost;
         this.mailUsername = mailUsername;
     }
@@ -53,13 +56,9 @@ public class VerificationEmailService {
 
         String safeName = StringUtils.hasText(name) ? name.trim() : "there";
         String roleLabel = role == Role.NUTRITIONIST ? "nutritionist" : "member";
-        String verifyUrl = frontendBaseUrl.replaceAll("/+$", "")
-            + "/verify-email?token="
-            + URLEncoder.encode(token, StandardCharsets.UTF_8)
-            + "&email="
-            + URLEncoder.encode(email, StandardCharsets.UTF_8)
-            + "&role="
-            + URLEncoder.encode(role.name(), StandardCharsets.UTF_8);
+        String verifyUrl = backendBaseUrl.replaceAll("/+$", "")
+            + "/api/auth/verify-email-link?token="
+            + URLEncoder.encode(token, StandardCharsets.UTF_8);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromAddress);

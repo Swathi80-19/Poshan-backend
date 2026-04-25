@@ -95,6 +95,7 @@ $env:MAIL_USERNAME="your_email@gmail.com"
 $env:MAIL_PASSWORD="your_app_password"
 $env:MAIL_FROM="your_email@gmail.com"
 $env:FRONTEND_BASE_URL="http://localhost:5173"
+$env:BACKEND_BASE_URL="http://localhost:8080"
 ```
 
 For Gmail, use an App Password instead of your normal mailbox password.
@@ -119,7 +120,9 @@ For Render deployment, use a Render Postgres database and set standard Spring da
 SPRING_DATASOURCE_URL=jdbc:postgresql://<internal-host>:5432/<database-name>
 SPRING_DATASOURCE_USERNAME=<database-user>
 SPRING_DATASOURCE_PASSWORD=<database-password>
-CORS_ALLOWED_ORIGINS=https://<your-frontend>.onrender.com
+CORS_ALLOWED_ORIGINS=https://<your-frontend>.vercel.app
+FRONTEND_BASE_URL=https://<your-frontend>.vercel.app
+BACKEND_BASE_URL=https://<your-backend>.onrender.com
 ```
 
 Use the internal connection details from your Render Postgres dashboard when the web service and database are in the same region.

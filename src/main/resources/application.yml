@@ -32,10 +32,11 @@ server:
 
 app:
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
+  backend-base-url: ${BACKEND_BASE_URL:http://localhost:8080}
   auth:
     email-verification:
       from-address: ${MAIL_FROM:}
       token-ttl-minutes: ${EMAIL_VERIFICATION_TOKEN_TTL_MINUTES:30}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
-    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*,https://localhost:*,https://127.0.0.1:*,http://192.168.*:*,http://10.*:*,http://172.*:*,http://*.local:*,https://*.onrender.com}
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*,https://localhost:*,https://127.0.0.1:*,http://192.168.*:*,http://10.*:*,http://172.*:*,http://*.local:*,https://*.onrender.com,https://*.vercel.app}
