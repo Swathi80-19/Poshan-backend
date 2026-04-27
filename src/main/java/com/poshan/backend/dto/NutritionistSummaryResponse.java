@@ -5,6 +5,7 @@ public record NutritionistSummaryResponse(
     String name,
     String username,
     String email,
-    String specialization
+    String specialization,
+    Integer experience
 ) {
 }

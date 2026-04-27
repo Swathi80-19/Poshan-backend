@@ -40,13 +40,15 @@ class NutritionistControllerVisibilityTest {
         nutritionist.setUsername("asha_menon");
         nutritionist.setEmail("asha@example.com");
         nutritionist.setSpecialization("Clinical Nutrition");
+        nutritionist.setExperience(8);
         nutritionistRepository.save(nutritionist);
 
         mockMvc.perform(get("/api/nutritionists"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].name").value("Asha Menon"))
             .andExpect(jsonPath("$[0].username").value("asha_menon"))
-            .andExpect(jsonPath("$[0].specialization").value("Clinical Nutrition"));
+            .andExpect(jsonPath("$[0].specialization").value("Clinical Nutrition"))
+            .andExpect(jsonPath("$[0].experience").value(8));
     }
 
     @Test

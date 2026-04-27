@@ -59,7 +59,8 @@ public class NutritionistService {
                 nutritionist.getName(),
                 nutritionist.getUsername(),
                 nutritionist.getEmail(),
-                nutritionist.getSpecialization()
+                nutritionist.getSpecialization(),
+                nutritionist.getExperience()
             ))
             .toList();
     }
