@@ -53,7 +53,7 @@ public class NutritionistService {
     }
 
     public List<NutritionistSummaryResponse> getNutritionists() {
-        return nutritionistRepository.findAll().stream()
+        return nutritionistRepository.findAllByOrderByCreatedAtDesc().stream()
             .map(nutritionist -> new NutritionistSummaryResponse(
                 nutritionist.getId(),
                 nutritionist.getName(),

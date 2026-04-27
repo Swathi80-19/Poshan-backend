@@ -37,6 +37,7 @@ public class SecurityConfig {
                     .addPathPatterns("/api/**")
                     .excludePathPatterns(
                         "/api/auth/**",
+                        "/api/nutritionists",
                         "/h2-console/**"
                     );
             }
