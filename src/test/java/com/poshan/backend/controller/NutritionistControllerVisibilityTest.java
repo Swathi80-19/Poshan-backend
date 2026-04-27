@@ -5,6 +5,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.poshan.backend.entity.Nutritionist;
+import com.poshan.backend.repository.AppointmentRepository;
+import com.poshan.backend.repository.AuthTokenRepository;
+import com.poshan.backend.repository.ChatMessageRepository;
 import com.poshan.backend.repository.NutritionistRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,8 +31,20 @@ class NutritionistControllerVisibilityTest {
     @Autowired
     private NutritionistRepository nutritionistRepository;
 
+    @Autowired
+    private AppointmentRepository appointmentRepository;
+
+    @Autowired
+    private AuthTokenRepository authTokenRepository;
+
+    @Autowired
+    private ChatMessageRepository chatMessageRepository;
+
     @BeforeEach
     void setUp() {
+        chatMessageRepository.deleteAll();
+        authTokenRepository.deleteAll();
+        appointmentRepository.deleteAll();
         nutritionistRepository.deleteAll();
     }
 
