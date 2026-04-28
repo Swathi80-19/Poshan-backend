@@ -17,10 +17,6 @@ public record AuthLoginResponse(
     boolean emailVerified,
     LocalDateTime emailVerifiedAt,
     boolean profileCompleted,
-    boolean phoneVerificationRequired,
-    String phoneVerificationChallengeId,
-    String maskedPhone,
-    String developmentOtp,
     String message
 ) {
 }

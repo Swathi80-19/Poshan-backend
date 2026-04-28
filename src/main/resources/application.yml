@@ -31,8 +31,8 @@ server:
   port: ${PORT:8080}
 
 app:
-  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
-  backend-base-url: ${BACKEND_BASE_URL:http://localhost:8080}
+  frontend-base-url: ${FRONTEND_BASE_URL:}
+  backend-base-url: ${BACKEND_BASE_URL:}
   auth:
     jwt:
       secret: ${JWT_SECRET:poshan-dev-jwt-secret-change-this-in-production-123456789}

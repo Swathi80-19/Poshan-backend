@@ -7,8 +7,6 @@ import com.poshan.backend.dto.EmailVerificationRequest;
 import com.poshan.backend.dto.EmailVerificationResponse;
 import com.poshan.backend.dto.MemberRegisterRequest;
 import com.poshan.backend.dto.NutritionistRegisterRequest;
-import com.poshan.backend.dto.PhoneOtpResendRequest;
-import com.poshan.backend.dto.PhoneOtpVerifyRequest;
 import com.poshan.backend.dto.ResendVerificationRequest;
 import com.poshan.backend.dto.VerificationStatusResponse;
 import com.poshan.backend.config.EmailVerificationProperties;
@@ -17,24 +15,20 @@ import com.poshan.backend.entity.EmailVerificationToken;
 import com.poshan.backend.entity.Member;
 import com.poshan.backend.entity.MemberProfile;
 import com.poshan.backend.entity.Nutritionist;
-import com.poshan.backend.entity.PhoneLoginChallenge;
 import com.poshan.backend.enums.Role;
 import com.poshan.backend.repository.AuthTokenRepository;
 import com.poshan.backend.repository.EmailVerificationTokenRepository;
 import com.poshan.backend.repository.MemberProfileRepository;
 import com.poshan.backend.repository.MemberRepository;
 import com.poshan.backend.repository.NutritionistRepository;
-import com.poshan.backend.repository.PhoneLoginChallengeRepository;
 import com.poshan.backend.security.JwtService;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -47,10 +41,7 @@ public class AuthService {
     private final VerificationEmailService verificationEmailService;
     private final EmailVerificationProperties verificationProperties;
     private final MemberProfileRepository memberProfileRepository;
-    private final PhoneLoginChallengeRepository phoneLoginChallengeRepository;
     private final JwtService jwtService;
-    private final int phoneOtpTtlMinutes;
-    private final boolean exposePhoneOtpInResponse;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthService(
@@ -61,10 +52,7 @@ public class AuthService {
         VerificationEmailService verificationEmailService,
         EmailVerificationProperties verificationProperties,
         MemberProfileRepository memberProfileRepository,
-        PhoneLoginChallengeRepository phoneLoginChallengeRepository,
-        JwtService jwtService,
-        @org.springframework.beans.factory.annotation.Value("${app.auth.phone-otp.token-ttl-minutes:10}") int phoneOtpTtlMinutes,
-        @org.springframework.beans.factory.annotation.Value("${app.auth.phone-otp.expose-code-in-response:true}") boolean exposePhoneOtpInResponse
+        JwtService jwtService
     ) {
         this.memberRepository = memberRepository;
         this.nutritionistRepository = nutritionistRepository;
@@ -73,10 +61,7 @@ public class AuthService {
         this.verificationEmailService = verificationEmailService;
         this.verificationProperties = verificationProperties;
         this.memberProfileRepository = memberProfileRepository;
-        this.phoneLoginChallengeRepository = phoneLoginChallengeRepository;
         this.jwtService = jwtService;
-        this.phoneOtpTtlMinutes = phoneOtpTtlMinutes;
-        this.exposePhoneOtpInResponse = exposePhoneOtpInResponse;
     }
 
     @Transactional
@@ -128,9 +113,11 @@ public class AuthService {
         }
 
         ensureEmailVerified(member.getEmailVerified());
-        requirePhone(member.getPhone(), Role.MEMBER);
-        PhoneLoginChallenge challenge = issuePhoneChallenge(member, null, Role.MEMBER);
-        return toPhoneChallengeResponse(member, null, challenge, "Verify the code sent to your phone to finish signing in.");
+        member.setLoginCount(member.getLoginCount() + 1);
+        member.setLastLoginAt(LocalDateTime.now());
+        Member savedMember = memberRepository.save(member);
+        AuthToken authToken = issueToken(savedMember, null, Role.MEMBER);
+        return toAuthenticatedResponse(savedMember, null, authToken.getToken(), "Signed in successfully.");
     }
 
     @Transactional
@@ -184,14 +171,11 @@ public class AuthService {
         }
 
         ensureEmailVerified(nutritionist.getEmailVerified());
-        requirePhone(nutritionist.getPhone(), Role.NUTRITIONIST);
-        PhoneLoginChallenge challenge = issuePhoneChallenge(null, nutritionist, Role.NUTRITIONIST);
-        return toPhoneChallengeResponse(
-            null,
-            nutritionist,
-            challenge,
-            "Verify the code sent to your phone to finish signing in."
-        );
+        nutritionist.setLoginCount(nutritionist.getLoginCount() + 1);
+        nutritionist.setLastLoginAt(LocalDateTime.now());
+        Nutritionist savedNutritionist = nutritionistRepository.save(nutritionist);
+        AuthToken authToken = issueToken(null, savedNutritionist, Role.NUTRITIONIST);
+        return toAuthenticatedResponse(null, savedNutritionist, authToken.getToken(), "Signed in successfully.");
     }
 
     public void logout(String token) {
@@ -199,75 +183,6 @@ public class AuthService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Token not found"));
         authToken.setRevoked(true);
         authTokenRepository.save(authToken);
-    }
-
-    @Transactional
-    public AuthLoginResponse verifyPhoneOtp(PhoneOtpVerifyRequest request) {
-        PhoneLoginChallenge challenge = phoneLoginChallengeRepository.findByChallengeId(request.challengeId().trim())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Phone verification challenge not found."));
-
-        if (challenge.getUsedAt() != null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This phone verification code has already been used.");
-        }
-
-        if (challenge.getExpiresAt() == null || challenge.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This phone verification code has expired. Request a new one.");
-        }
-
-        if (!challenge.getOtpCode().equals(request.otp().trim())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid phone verification code.");
-        }
-
-        challenge.setUsedAt(LocalDateTime.now());
-        phoneLoginChallengeRepository.save(challenge);
-
-        if (challenge.getRole() == Role.MEMBER && challenge.getMember() != null) {
-            Member member = challenge.getMember();
-            member.setLoginCount(member.getLoginCount() + 1);
-            member.setLastLoginAt(LocalDateTime.now());
-            Member savedMember = memberRepository.save(member);
-            AuthToken authToken = issueToken(savedMember, null, Role.MEMBER);
-            return toAuthenticatedResponse(savedMember, null, authToken.getToken(), "Signed in successfully.");
-        }
-
-        if (challenge.getRole() == Role.NUTRITIONIST && challenge.getNutritionist() != null) {
-            Nutritionist nutritionist = challenge.getNutritionist();
-            nutritionist.setLoginCount(nutritionist.getLoginCount() + 1);
-            nutritionist.setLastLoginAt(LocalDateTime.now());
-            Nutritionist savedNutritionist = nutritionistRepository.save(nutritionist);
-            AuthToken authToken = issueToken(null, savedNutritionist, Role.NUTRITIONIST);
-            return toAuthenticatedResponse(null, savedNutritionist, authToken.getToken(), "Signed in successfully.");
-        }
-
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phone verification challenge is invalid.");
-    }
-
-    @Transactional
-    public AuthLoginResponse resendPhoneOtp(PhoneOtpResendRequest request) {
-        PhoneLoginChallenge challenge = phoneLoginChallengeRepository.findByChallengeId(request.challengeId().trim())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Phone verification challenge not found."));
-
-        if (challenge.getRole() == Role.MEMBER && challenge.getMember() != null) {
-            PhoneLoginChallenge nextChallenge = issuePhoneChallenge(challenge.getMember(), null, Role.MEMBER);
-            return toPhoneChallengeResponse(
-                challenge.getMember(),
-                null,
-                nextChallenge,
-                "A fresh verification code has been sent to your phone."
-            );
-        }
-
-        if (challenge.getRole() == Role.NUTRITIONIST && challenge.getNutritionist() != null) {
-            PhoneLoginChallenge nextChallenge = issuePhoneChallenge(null, challenge.getNutritionist(), Role.NUTRITIONIST);
-            return toPhoneChallengeResponse(
-                null,
-                challenge.getNutritionist(),
-                nextChallenge,
-                "A fresh verification code has been sent to your phone."
-            );
-        }
-
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phone verification challenge is invalid.");
     }
 
     @Transactional
@@ -433,27 +348,6 @@ public class AuthService {
         return authTokenRepository.save(authToken);
     }
 
-    private PhoneLoginChallenge issuePhoneChallenge(Member member, Nutritionist nutritionist, Role role) {
-        LocalDateTime now = LocalDateTime.now();
-
-        if (role == Role.MEMBER && member != null) {
-            expirePendingPhoneChallengesForMember(member, now);
-        } else if (role == Role.NUTRITIONIST && nutritionist != null) {
-            expirePendingPhoneChallengesForNutritionist(nutritionist, now);
-        }
-
-        PhoneLoginChallenge challenge = new PhoneLoginChallenge();
-        challenge.setChallengeId(UUID.randomUUID().toString().replace("-", ""));
-        challenge.setOtpCode(generateOtp());
-        challenge.setPhone(role == Role.MEMBER ? member.getPhone() : nutritionist.getPhone());
-        challenge.setRole(role);
-        challenge.setMember(member);
-        challenge.setNutritionist(nutritionist);
-        challenge.setExpiresAt(now.plusMinutes(phoneOtpTtlMinutes));
-        challenge.setUsedAt(null);
-        return phoneLoginChallengeRepository.save(challenge);
-    }
-
     private void issueVerificationEmail(Member member, Nutritionist nutritionist, Role role) {
         LocalDateTime now = LocalDateTime.now();
 
@@ -495,18 +389,6 @@ public class AuthService {
         List<EmailVerificationToken> tokens = emailVerificationTokenRepository.findAllByNutritionistAndUsedAtIsNull(nutritionist);
         tokens.forEach(token -> token.setUsedAt(usedAt));
         emailVerificationTokenRepository.saveAll(tokens);
-    }
-
-    private void expirePendingPhoneChallengesForMember(Member member, LocalDateTime usedAt) {
-        List<PhoneLoginChallenge> challenges = phoneLoginChallengeRepository.findAllByMemberAndUsedAtIsNull(member);
-        challenges.forEach(challenge -> challenge.setUsedAt(usedAt));
-        phoneLoginChallengeRepository.saveAll(challenges);
-    }
-
-    private void expirePendingPhoneChallengesForNutritionist(Nutritionist nutritionist, LocalDateTime usedAt) {
-        List<PhoneLoginChallenge> challenges = phoneLoginChallengeRepository.findAllByNutritionistAndUsedAtIsNull(nutritionist);
-        challenges.forEach(challenge -> challenge.setUsedAt(usedAt));
-        phoneLoginChallengeRepository.saveAll(challenges);
     }
 
     private void ensureEmailVerified(Boolean emailVerified) {
@@ -578,10 +460,6 @@ public class AuthService {
                 Boolean.TRUE.equals(member.getEmailVerified()),
                 member.getEmailVerifiedAt(),
                 age != null,
-                false,
-                null,
-                maskPhone(member.getPhone()),
-                null,
                 message
             );
         }
@@ -601,66 +479,6 @@ public class AuthService {
             Boolean.TRUE.equals(nutritionist.getEmailVerified()),
             nutritionist.getEmailVerifiedAt(),
             nutritionist.getAge() != null,
-            false,
-            null,
-            maskPhone(nutritionist.getPhone()),
-            null,
-            message
-        );
-    }
-
-    private AuthLoginResponse toPhoneChallengeResponse(
-        Member member,
-        Nutritionist nutritionist,
-        PhoneLoginChallenge challenge,
-        String message
-    ) {
-        if (member != null) {
-            MemberProfile profile = memberProfileRepository.findByMemberId(member.getId()).orElse(null);
-            Integer age = profile != null ? profile.getAge() : null;
-
-            return new AuthLoginResponse(
-                member.getId(),
-                member.getName(),
-                member.getUsername(),
-                member.getEmail(),
-                member.getPhone(),
-                member.getRole().name(),
-                null,
-                null,
-                age,
-                member.getLoginCount(),
-                null,
-                Boolean.TRUE.equals(member.getEmailVerified()),
-                member.getEmailVerifiedAt(),
-                age != null,
-                true,
-                challenge.getChallengeId(),
-                maskPhone(member.getPhone()),
-                exposePhoneOtpInResponse ? challenge.getOtpCode() : null,
-                message
-            );
-        }
-
-        return new AuthLoginResponse(
-            nutritionist.getId(),
-            nutritionist.getName(),
-            nutritionist.getUsername(),
-            nutritionist.getEmail(),
-            nutritionist.getPhone(),
-            nutritionist.getRole().name(),
-            nutritionist.getSpecialization(),
-            nutritionist.getExperience(),
-            nutritionist.getAge(),
-            nutritionist.getLoginCount(),
-            null,
-            Boolean.TRUE.equals(nutritionist.getEmailVerified()),
-            nutritionist.getEmailVerifiedAt(),
-            nutritionist.getAge() != null,
-            true,
-            challenge.getChallengeId(),
-            maskPhone(nutritionist.getPhone()),
-            exposePhoneOtpInResponse ? challenge.getOtpCode() : null,
             message
         );
     }
@@ -672,31 +490,5 @@ public class AuthService {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    private void requirePhone(String phone, Role role) {
-        if (StringUtils.hasText(phone)) {
-            return;
-        }
-
-        String roleLabel = role == Role.NUTRITIONIST ? "nutritionist" : "member";
-        throw new ResponseStatusException(
-            HttpStatus.BAD_REQUEST,
-            "A phone number is required on the " + roleLabel + " account before phone verification can be used."
-        );
-    }
-
-    private String generateOtp() {
-        return String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
-    }
-
-    private String maskPhone(String phone) {
-        String digitsOnly = phone == null ? "" : phone.replaceAll("\\s+", "");
-
-        if (digitsOnly.length() <= 4) {
-            return digitsOnly;
-        }
-
-        return "*".repeat(Math.max(digitsOnly.length() - 4, 0)) + digitsOnly.substring(digitsOnly.length() - 4);
     }
 }

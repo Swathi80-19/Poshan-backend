@@ -18,7 +18,6 @@ import com.poshan.backend.repository.EmailVerificationTokenRepository;
 import com.poshan.backend.repository.MemberProfileRepository;
 import com.poshan.backend.repository.MemberRepository;
 import com.poshan.backend.repository.NutritionistRepository;
-import com.poshan.backend.repository.PhoneLoginChallengeRepository;
 import com.poshan.backend.security.JwtService;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -32,7 +31,6 @@ class AuthServiceVerificationTest {
     private AuthTokenRepository authTokenRepository;
     private EmailVerificationTokenRepository emailVerificationTokenRepository;
     private MemberProfileRepository memberProfileRepository;
-    private PhoneLoginChallengeRepository phoneLoginChallengeRepository;
     private VerificationEmailService verificationEmailService;
     private JwtService jwtService;
     private AuthService authService;
@@ -44,7 +42,6 @@ class AuthServiceVerificationTest {
         authTokenRepository = mock(AuthTokenRepository.class);
         emailVerificationTokenRepository = mock(EmailVerificationTokenRepository.class);
         memberProfileRepository = mock(MemberProfileRepository.class);
-        phoneLoginChallengeRepository = mock(PhoneLoginChallengeRepository.class);
         verificationEmailService = mock(VerificationEmailService.class);
         jwtService = new JwtService("poshan-test-jwt-secret-change-this-before-production-123456789", 7);
         jwtService.initialize();
@@ -60,10 +57,7 @@ class AuthServiceVerificationTest {
             verificationEmailService,
             verificationProperties,
             memberProfileRepository,
-            phoneLoginChallengeRepository,
-            jwtService,
-            10,
-            true
+            jwtService
         );
     }
 

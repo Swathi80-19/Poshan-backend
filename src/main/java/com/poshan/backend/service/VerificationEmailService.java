@@ -30,8 +30,8 @@ public class VerificationEmailService {
     public VerificationEmailService(
         ObjectProvider<JavaMailSender> mailSenderProvider,
         EmailVerificationProperties verificationProperties,
-        @org.springframework.beans.factory.annotation.Value("${app.frontend-base-url:http://localhost:5173}") String frontendBaseUrl,
-        @org.springframework.beans.factory.annotation.Value("${app.backend-base-url:http://localhost:8080}") String backendBaseUrl,
+        @org.springframework.beans.factory.annotation.Value("${app.frontend-base-url:}") String frontendBaseUrl,
+        @org.springframework.beans.factory.annotation.Value("${app.backend-base-url:}") String backendBaseUrl,
         @org.springframework.beans.factory.annotation.Value("${spring.mail.host:}") String mailHost,
         @org.springframework.beans.factory.annotation.Value("${spring.mail.username:}") String mailUsername
     ) {
@@ -46,6 +46,14 @@ public class VerificationEmailService {
     public void sendVerificationEmail(String email, String name, Role role, String token) {
         JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
         String fromAddress = resolveFromAddress();
+        String verifyBaseUrl = requirePublicBaseUrl(
+            backendBaseUrl,
+            "BACKEND_BASE_URL must be set to your deployed backend URL before verification emails can be sent."
+        );
+        requirePublicBaseUrl(
+            frontendBaseUrl,
+            "FRONTEND_BASE_URL must be set to your deployed app URL before verification emails can be sent."
+        );
 
         if (mailSender == null || !StringUtils.hasText(mailHost) || !StringUtils.hasText(fromAddress)) {
             throw new ResponseStatusException(
@@ -56,7 +64,7 @@ public class VerificationEmailService {
 
         String safeName = StringUtils.hasText(name) ? name.trim() : "there";
         String roleLabel = role == Role.NUTRITIONIST ? "nutritionist" : "member";
-        String verifyUrl = backendBaseUrl.replaceAll("/+$", "")
+        String verifyUrl = verifyBaseUrl
             + "/api/auth/verify-email-link?token="
             + URLEncoder.encode(token, StandardCharsets.UTF_8);
 
@@ -96,5 +104,20 @@ public class VerificationEmailService {
         }
 
         return mailUsername;
+    }
+
+    private String requirePublicBaseUrl(String value, String errorMessage) {
+        String normalized = value == null ? "" : value.trim().replaceAll("/+$", "");
+
+        if (!StringUtils.hasText(normalized) || isLocalUrl(normalized)) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage);
+        }
+
+        return normalized;
+    }
+
+    private boolean isLocalUrl(String value) {
+        String normalized = value.toLowerCase();
+        return normalized.contains("localhost") || normalized.contains("127.0.0.1");
     }
 }
