@@ -54,6 +54,7 @@ public class AppointmentService {
         appointment.setMode(parseMode(request.mode()));
         appointment.setStatus(AppointmentStatus.UPCOMING);
         appointment.setNotes(request.notes());
+        appointment.setChatUnlocked(false);
         Appointment savedAppointment = appointmentRepository.save(appointment);
         assignNutritionistToMemberProfile(member, nutritionist);
         return toResponse(savedAppointment);

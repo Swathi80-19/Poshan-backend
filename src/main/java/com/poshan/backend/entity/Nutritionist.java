@@ -23,9 +23,13 @@ public class Nutritionist extends BaseEntity {
 
     private Integer experience;
 
+    private Integer age;
+
     private String passwordHash;
 
     private String specialization;
+
+    private String bio;
 
     private Boolean emailVerified = false;
 

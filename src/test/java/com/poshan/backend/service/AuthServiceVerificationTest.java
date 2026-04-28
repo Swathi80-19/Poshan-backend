@@ -15,8 +15,10 @@ import com.poshan.backend.entity.Member;
 import com.poshan.backend.enums.Role;
 import com.poshan.backend.repository.AuthTokenRepository;
 import com.poshan.backend.repository.EmailVerificationTokenRepository;
+import com.poshan.backend.repository.MemberProfileRepository;
 import com.poshan.backend.repository.MemberRepository;
 import com.poshan.backend.repository.NutritionistRepository;
+import com.poshan.backend.repository.PhoneLoginChallengeRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +30,8 @@ class AuthServiceVerificationTest {
     private NutritionistRepository nutritionistRepository;
     private AuthTokenRepository authTokenRepository;
     private EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private MemberProfileRepository memberProfileRepository;
+    private PhoneLoginChallengeRepository phoneLoginChallengeRepository;
     private VerificationEmailService verificationEmailService;
     private AuthService authService;
 
@@ -37,6 +41,8 @@ class AuthServiceVerificationTest {
         nutritionistRepository = mock(NutritionistRepository.class);
         authTokenRepository = mock(AuthTokenRepository.class);
         emailVerificationTokenRepository = mock(EmailVerificationTokenRepository.class);
+        memberProfileRepository = mock(MemberProfileRepository.class);
+        phoneLoginChallengeRepository = mock(PhoneLoginChallengeRepository.class);
         verificationEmailService = mock(VerificationEmailService.class);
 
         EmailVerificationProperties verificationProperties = new EmailVerificationProperties();
@@ -48,7 +54,11 @@ class AuthServiceVerificationTest {
             authTokenRepository,
             emailVerificationTokenRepository,
             verificationEmailService,
-            verificationProperties
+            verificationProperties,
+            memberProfileRepository,
+            phoneLoginChallengeRepository,
+            10,
+            true
         );
     }
 

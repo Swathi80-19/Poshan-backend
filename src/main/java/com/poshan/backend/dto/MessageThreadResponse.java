@@ -10,7 +10,8 @@ public record MessageThreadResponse(
     LocalDateTime appointmentScheduledAt,
     String appointmentDateLabel,
     String appointmentTimeLabel,
-    boolean active,
+    boolean bookingActive,
+    boolean chatUnlocked,
     List<ChatMessageResponse> messages
 ) {
 }

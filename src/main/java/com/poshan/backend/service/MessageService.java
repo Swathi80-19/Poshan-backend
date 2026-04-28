@@ -66,6 +66,7 @@ public class MessageService {
             appointment.getDateLabel(),
             appointment.getTimeLabel(),
             appointment.getStatus() == AppointmentStatus.UPCOMING,
+            Boolean.TRUE.equals(appointment.getChatUnlocked()),
             getMessages(memberId, nutritionistId)
         );
     }
@@ -81,6 +82,7 @@ public class MessageService {
             appointment.getDateLabel(),
             appointment.getTimeLabel(),
             appointment.getStatus() == AppointmentStatus.UPCOMING,
+            Boolean.TRUE.equals(appointment.getChatUnlocked()),
             getMessages(memberId, nutritionistId)
         );
     }
@@ -88,6 +90,7 @@ public class MessageService {
     @Transactional
     public ChatMessageResponse sendAsMember(Long memberId, Long nutritionistId, ChatMessageRequest request) {
         Appointment appointment = requireRelationship(memberId, nutritionistId);
+        requireUnlocked(appointment);
         ChatMessage message = new ChatMessage();
         message.setMember(appointment.getMember());
         message.setNutritionist(appointment.getNutritionist());
@@ -99,12 +102,21 @@ public class MessageService {
     @Transactional
     public ChatMessageResponse sendAsNutritionist(Long nutritionistId, Long memberId, ChatMessageRequest request) {
         Appointment appointment = requireRelationship(memberId, nutritionistId);
+        requireUnlocked(appointment);
         ChatMessage message = new ChatMessage();
         message.setMember(appointment.getMember());
         message.setNutritionist(appointment.getNutritionist());
         message.setSenderRole(Role.NUTRITIONIST);
         message.setText(request.text().trim());
         return toMessageResponse(chatMessageRepository.save(message));
+    }
+
+    @Transactional
+    public MessageThreadResponse updateChatAccess(Long nutritionistId, Long memberId, boolean unlocked) {
+        Appointment appointment = requireRelationship(memberId, nutritionistId);
+        appointment.setChatUnlocked(unlocked);
+        appointmentRepository.save(appointment);
+        return getThreadForNutritionist(nutritionistId, memberId);
     }
 
     private List<ChatMessageResponse> getMessages(Long memberId, Long nutritionistId) {
@@ -137,7 +149,8 @@ public class MessageService {
             appointment.getScheduledAt(),
             appointment.getDateLabel(),
             appointment.getTimeLabel(),
-            appointment.getStatus() == AppointmentStatus.UPCOMING
+            appointment.getStatus() == AppointmentStatus.UPCOMING,
+            Boolean.TRUE.equals(appointment.getChatUnlocked())
         );
     }
 
@@ -157,11 +170,16 @@ public class MessageService {
             appointment.getScheduledAt(),
             appointment.getDateLabel(),
             appointment.getTimeLabel(),
-            appointment.getStatus() == AppointmentStatus.UPCOMING
+            appointment.getStatus() == AppointmentStatus.UPCOMING,
+            Boolean.TRUE.equals(appointment.getChatUnlocked())
         );
     }
 
     private String buildAppointmentFallback(Appointment appointment) {
+        if (!Boolean.TRUE.equals(appointment.getChatUnlocked())) {
+            return "Appointment booked. Waiting for the nutritionist to unlock chat.";
+        }
+
         if (appointment.getDateLabel() != null && appointment.getTimeLabel() != null) {
             return "Appointment booked for " + appointment.getDateLabel() + " at " + appointment.getTimeLabel() + ".";
         }
@@ -186,5 +204,14 @@ public class MessageService {
             message.getText(),
             message.getCreatedAt()
         );
+    }
+
+    private void requireUnlocked(Appointment appointment) {
+        if (!Boolean.TRUE.equals(appointment.getChatUnlocked())) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "Chat is locked. The nutritionist must unlock this conversation before messages can be sent."
+            );
+        }
     }
 }

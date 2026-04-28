@@ -35,4 +35,6 @@ public class Appointment extends BaseEntity {
     private AppointmentStatus status;
 
     private String notes;
+
+    private Boolean chatUnlocked = false;
 }

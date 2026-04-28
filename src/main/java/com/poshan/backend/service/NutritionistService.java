@@ -1,6 +1,8 @@
 package com.poshan.backend.service;
 
 import com.poshan.backend.dto.DashboardResponse;
+import com.poshan.backend.dto.NutritionistProfileRequest;
+import com.poshan.backend.dto.NutritionistProfileResponse;
 import com.poshan.backend.entity.Appointment;
 import com.poshan.backend.dto.NutritionistPatientResponse;
 import com.poshan.backend.dto.NutritionistSummaryResponse;
@@ -97,6 +99,17 @@ public class NutritionistService {
         return new DashboardResponse(summary, patients);
     }
 
+    public NutritionistProfileResponse getProfile(Long nutritionistId) {
+        return toProfileResponse(getNutritionist(nutritionistId));
+    }
+
+    public NutritionistProfileResponse updateProfile(Long nutritionistId, NutritionistProfileRequest request) {
+        Nutritionist nutritionist = getNutritionist(nutritionistId);
+        nutritionist.setAge(request.age());
+        nutritionist.setBio(normalizeOptionalValue(request.bio()));
+        return toProfileResponse(nutritionistRepository.save(nutritionist));
+    }
+
     private boolean hasRealData(Member member, Long nutritionistId) {
         MemberProfile profile = memberProfileRepository.findByMemberId(member.getId()).orElse(null);
         return profile != null && profile.getAssignedNutritionist() != null && profile.getAssignedNutritionist().getId().equals(nutritionistId)
@@ -119,5 +132,34 @@ public class NutritionistService {
             foodLogRepository.findAllByMemberIdOrderByLoggedAtDesc(member.getId()).size(),
             activityLogRepository.findAllByMemberIdOrderByLoggedAtDesc(member.getId()).size()
         );
+    }
+
+    private Nutritionist getNutritionist(Long nutritionistId) {
+        return nutritionistRepository.findById(nutritionistId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nutritionist not found"));
+    }
+
+    private NutritionistProfileResponse toProfileResponse(Nutritionist nutritionist) {
+        return new NutritionistProfileResponse(
+            nutritionist.getId(),
+            nutritionist.getName(),
+            nutritionist.getUsername(),
+            nutritionist.getEmail(),
+            nutritionist.getPhone(),
+            nutritionist.getSpecialization(),
+            nutritionist.getExperience(),
+            nutritionist.getAge(),
+            nutritionist.getBio(),
+            nutritionist.getAge() != null
+        );
+    }
+
+    private String normalizeOptionalValue(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

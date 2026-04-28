@@ -2,6 +2,7 @@ package com.poshan.backend.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -108,6 +109,19 @@ class MessageControllerIntegrationTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer member-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"text\":\"Hello doctor\"}"))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(put("/api/messages/nutritionist/" + member.getId() + "/chat-access")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer nutritionist-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"unlocked\":true}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.chatUnlocked").value(true));
+
+        mockMvc.perform(post("/api/messages/member/" + nutritionist.getId())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer member-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"text\":\"Hello doctor\"}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.senderRole").value("MEMBER"))
             .andExpect(jsonPath("$.text").value("Hello doctor"));
@@ -123,6 +137,7 @@ class MessageControllerIntegrationTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer member-token"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.counterpartName").value("Asha Menon"))
+            .andExpect(jsonPath("$.chatUnlocked").value(true))
             .andExpect(jsonPath("$.messages.length()").value(2))
             .andExpect(jsonPath("$.messages[0].text").value("Hello doctor"))
             .andExpect(jsonPath("$.messages[1].text").value("Hi Riya, I can see your booking."));
@@ -139,6 +154,7 @@ class MessageControllerIntegrationTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer nutritionist-token"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].counterpartName").value("Riya Shah"))
+            .andExpect(jsonPath("$[0].chatUnlocked").value(true))
             .andExpect(jsonPath("$[0].lastMessage").value("Hi Riya, I can see your booking."));
     }
 }

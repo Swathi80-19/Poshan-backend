@@ -1,6 +1,6 @@
 package com.poshan.backend.entity;
 
-import com.poshan.backend.enums.PaymentStatus;
+import com.poshan.backend.enums.Role;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -13,24 +13,26 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-public class Payment extends BaseEntity {
+public class PhoneLoginChallenge extends BaseEntity {
+
+    private String challengeId;
+
+    private String otpCode;
+
+    private String phone;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @ManyToOne
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "member_id")
     private Member member;
 
     @ManyToOne
     @JoinColumn(name = "nutritionist_id")
     private Nutritionist nutritionist;
 
-    private String planId;
-    private String planLabel;
-    private Integer amount;
-    private Integer total;
-    private String transactionId;
+    private LocalDateTime expiresAt;
 
-    @Enumerated(EnumType.STRING)
-    private PaymentStatus status;
-
-    private LocalDateTime paidAt;
+    private LocalDateTime usedAt;
 }

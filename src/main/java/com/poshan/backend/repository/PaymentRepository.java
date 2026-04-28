@@ -8,5 +8,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findAllByMemberIdOrderByPaidAtDesc(Long memberId);
 
+    List<Payment> findAllByNutritionistIdOrderByPaidAtDesc(Long nutritionistId);
+
     void deleteAllByMemberId(Long memberId);
 }

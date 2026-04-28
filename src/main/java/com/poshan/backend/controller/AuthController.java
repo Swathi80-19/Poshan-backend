@@ -1,13 +1,15 @@
 package com.poshan.backend.controller;
 
 import com.poshan.backend.dto.AuthRequest;
+import com.poshan.backend.dto.AuthLoginResponse;
 import com.poshan.backend.dto.AuthRegistrationResponse;
 import com.poshan.backend.dto.EmailVerificationRequest;
 import com.poshan.backend.dto.EmailVerificationResponse;
 import com.poshan.backend.dto.MemberRegisterRequest;
 import com.poshan.backend.dto.NutritionistRegisterRequest;
+import com.poshan.backend.dto.PhoneOtpResendRequest;
+import com.poshan.backend.dto.PhoneOtpVerifyRequest;
 import com.poshan.backend.dto.ResendVerificationRequest;
-import com.poshan.backend.dto.SessionResponse;
 import com.poshan.backend.dto.VerificationStatusResponse;
 import com.poshan.backend.service.AuthService;
 import java.net.URI;
@@ -46,7 +48,7 @@ public class AuthController {
     }
 
     @PostMapping("/members/login")
-    public SessionResponse loginMember(@Valid @RequestBody AuthRequest request) {
+    public AuthLoginResponse loginMember(@Valid @RequestBody AuthRequest request) {
         return authService.loginMember(request);
     }
 
@@ -56,7 +58,7 @@ public class AuthController {
     }
 
     @PostMapping("/nutritionists/login")
-    public SessionResponse loginNutritionist(@Valid @RequestBody AuthRequest request) {
+    public AuthLoginResponse loginNutritionist(@Valid @RequestBody AuthRequest request) {
         return authService.loginNutritionist(request);
     }
 
@@ -64,6 +66,16 @@ public class AuthController {
     public void logout(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization) {
         String token = authorization.replace("Bearer ", "").trim();
         authService.logout(token);
+    }
+
+    @PostMapping("/verify-phone-otp")
+    public AuthLoginResponse verifyPhoneOtp(@Valid @RequestBody PhoneOtpVerifyRequest request) {
+        return authService.verifyPhoneOtp(request);
+    }
+
+    @PostMapping("/resend-phone-otp")
+    public AuthLoginResponse resendPhoneOtp(@Valid @RequestBody PhoneOtpResendRequest request) {
+        return authService.resendPhoneOtp(request);
     }
 
     @PostMapping("/verify-email")

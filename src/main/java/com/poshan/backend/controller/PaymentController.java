@@ -39,4 +39,9 @@ public class PaymentController {
     public List<PaymentResponse> getForMember() {
         return paymentService.getForMember(authContext.requireMemberId());
     }
+
+    @GetMapping("/nutritionist")
+    public List<PaymentResponse> getForNutritionist() {
+        return paymentService.getForNutritionist(authContext.requireNutritionistId());
+    }
 }

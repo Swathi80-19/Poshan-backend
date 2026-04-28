@@ -17,6 +17,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     List<Appointment> findAllByMemberIdOrderByScheduledAtDesc(Long memberId);
 
+    java.util.Optional<Appointment> findFirstByMemberIdOrderByScheduledAtDesc(Long memberId);
+
     boolean existsByMemberIdAndNutritionistId(Long memberId, Long nutritionistId);
 
     java.util.Optional<Appointment> findFirstByMemberIdAndNutritionistIdOrderByScheduledAtDesc(Long memberId, Long nutritionistId);

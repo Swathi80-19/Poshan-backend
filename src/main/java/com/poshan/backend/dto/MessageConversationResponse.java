@@ -11,6 +11,7 @@ public record MessageConversationResponse(
     LocalDateTime appointmentScheduledAt,
     String appointmentDateLabel,
     String appointmentTimeLabel,
-    boolean active
+    boolean bookingActive,
+    boolean chatUnlocked
 ) {
 }

@@ -1,12 +1,16 @@
 package com.poshan.backend.controller;
 
 import com.poshan.backend.dto.DashboardResponse;
+import com.poshan.backend.dto.NutritionistProfileRequest;
+import com.poshan.backend.dto.NutritionistProfileResponse;
 import com.poshan.backend.dto.NutritionistPatientResponse;
 import com.poshan.backend.dto.NutritionistSummaryResponse;
 import com.poshan.backend.security.AuthContext;
 import com.poshan.backend.service.NutritionistService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,5 +39,15 @@ public class NutritionistController {
     @GetMapping("/me/dashboard")
     public DashboardResponse getDashboard() {
         return nutritionistService.getNutritionistDashboard(authContext.requireNutritionistId());
+    }
+
+    @GetMapping("/me/profile")
+    public NutritionistProfileResponse getProfile() {
+        return nutritionistService.getProfile(authContext.requireNutritionistId());
+    }
+
+    @PutMapping("/me/profile")
+    public NutritionistProfileResponse updateProfile(@RequestBody NutritionistProfileRequest request) {
+        return nutritionistService.updateProfile(authContext.requireNutritionistId(), request);
     }
 }
