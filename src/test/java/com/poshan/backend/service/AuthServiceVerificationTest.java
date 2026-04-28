@@ -2,6 +2,8 @@ package com.poshan.backend.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -10,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.poshan.backend.config.EmailVerificationProperties;
 import com.poshan.backend.dto.EmailVerificationRequest;
 import com.poshan.backend.dto.EmailVerificationResponse;
+import com.poshan.backend.entity.AuthToken;
 import com.poshan.backend.entity.EmailVerificationToken;
 import com.poshan.backend.entity.Member;
 import com.poshan.backend.enums.Role;
@@ -46,6 +49,10 @@ class AuthServiceVerificationTest {
         jwtService = new JwtService("poshan-test-jwt-secret-change-this-before-production-123456789", 7);
         jwtService.initialize();
 
+        when(authTokenRepository.save(any(AuthToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(memberRepository.save(any(Member.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(memberProfileRepository.findByMemberId(anyLong())).thenReturn(Optional.empty());
+
         EmailVerificationProperties verificationProperties = new EmailVerificationProperties();
         verificationProperties.setTokenTtlMinutes(30);
 
@@ -66,6 +73,9 @@ class AuthServiceVerificationTest {
         LocalDateTime verifiedAt = LocalDateTime.of(2026, 4, 26, 9, 30);
 
         Member member = new Member();
+        member.setId(99L);
+        member.setName("Member User");
+        member.setUsername("member_user");
         member.setEmail("member@example.com");
         member.setEmailVerified(true);
         member.setEmailVerifiedAt(verifiedAt);
@@ -81,11 +91,16 @@ class AuthServiceVerificationTest {
 
         EmailVerificationResponse response = authService.verifyEmail(new EmailVerificationRequest("used-token"));
 
-        assertEquals("This email is already verified. You can sign in now.", response.message());
+        assertEquals("This email is already verified. Signing you in now.", response.message());
         assertEquals("member@example.com", response.email());
         assertEquals("MEMBER", response.role());
         assertTrue(response.verified());
         assertEquals(verifiedAt, response.verifiedAt());
-        verify(memberRepository, never()).save(member);
+        assertEquals(99L, response.id());
+        assertEquals("member_user", response.username());
+        assertTrue(response.loginCount() > 0);
+        assertTrue(response.profileCompleted() == false);
+        assertTrue(response.accessToken() != null && !response.accessToken().isBlank());
+        verify(memberRepository).save(member);
     }
 }

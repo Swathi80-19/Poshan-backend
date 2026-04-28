@@ -218,30 +218,18 @@ public class AuthService {
             Member member = token.getMember();
             member.setEmailVerified(true);
             member.setEmailVerifiedAt(verifiedAt);
-            memberRepository.save(member);
+            member = memberRepository.save(member);
             expirePendingMemberVerificationTokens(member, verifiedAt);
-            return new EmailVerificationResponse(
-                "Email verified successfully. You can now sign in to your member account.",
-                member.getEmail(),
-                Role.MEMBER.name(),
-                true,
-                member.getEmailVerifiedAt()
-            );
+            return issueVerifiedSession(member, null, Role.MEMBER, "Email verified successfully. Signing you in now.");
         }
 
         if (token.getRole() == Role.NUTRITIONIST && token.getNutritionist() != null) {
             Nutritionist nutritionist = token.getNutritionist();
             nutritionist.setEmailVerified(true);
             nutritionist.setEmailVerifiedAt(verifiedAt);
-            nutritionistRepository.save(nutritionist);
+            nutritionist = nutritionistRepository.save(nutritionist);
             expirePendingNutritionistVerificationTokens(nutritionist, verifiedAt);
-            return new EmailVerificationResponse(
-                "Email verified successfully. You can now sign in to your nutritionist account.",
-                nutritionist.getEmail(),
-                Role.NUTRITIONIST.name(),
-                true,
-                nutritionist.getEmailVerifiedAt()
-            );
+            return issueVerifiedSession(null, nutritionist, Role.NUTRITIONIST, "Email verified successfully. Signing you in now.");
         }
 
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Verification link is invalid.");
@@ -402,29 +390,62 @@ public class AuthService {
 
     private EmailVerificationResponse buildAlreadyVerifiedResponse(EmailVerificationToken token) {
         if (token.getRole() == Role.MEMBER && token.getMember() != null && Boolean.TRUE.equals(token.getMember().getEmailVerified())) {
-            Member member = token.getMember();
-            return new EmailVerificationResponse(
-                "This email is already verified. You can sign in now.",
-                member.getEmail(),
-                Role.MEMBER.name(),
-                true,
-                member.getEmailVerifiedAt()
-            );
+            return issueVerifiedSession(token.getMember(), null, Role.MEMBER, "This email is already verified. Signing you in now.");
         }
 
         if (token.getRole() == Role.NUTRITIONIST && token.getNutritionist() != null
             && Boolean.TRUE.equals(token.getNutritionist().getEmailVerified())) {
-            Nutritionist nutritionist = token.getNutritionist();
-            return new EmailVerificationResponse(
-                "This email is already verified. You can sign in now.",
-                nutritionist.getEmail(),
-                Role.NUTRITIONIST.name(),
-                true,
-                nutritionist.getEmailVerifiedAt()
-            );
+            return issueVerifiedSession(null, token.getNutritionist(), Role.NUTRITIONIST, "This email is already verified. Signing you in now.");
         }
 
         return null;
+    }
+
+    private EmailVerificationResponse issueVerifiedSession(
+        Member member,
+        Nutritionist nutritionist,
+        Role role,
+        String message
+    ) {
+        LocalDateTime lastLoginAt = LocalDateTime.now();
+
+        if (role == Role.MEMBER && member != null) {
+            member.setLoginCount((member.getLoginCount() == null ? 0 : member.getLoginCount()) + 1);
+            member.setLastLoginAt(lastLoginAt);
+            Member savedMember = memberRepository.save(member);
+            AuthToken authToken = issueToken(savedMember, null, role);
+            return toEmailVerificationResponse(toAuthenticatedResponse(savedMember, null, authToken.getToken(), message));
+        }
+
+        if (role == Role.NUTRITIONIST && nutritionist != null) {
+            nutritionist.setLoginCount((nutritionist.getLoginCount() == null ? 0 : nutritionist.getLoginCount()) + 1);
+            nutritionist.setLastLoginAt(lastLoginAt);
+            Nutritionist savedNutritionist = nutritionistRepository.save(nutritionist);
+            AuthToken authToken = issueToken(null, savedNutritionist, role);
+            return toEmailVerificationResponse(toAuthenticatedResponse(null, savedNutritionist, authToken.getToken(), message));
+        }
+
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Verification link is invalid.");
+    }
+
+    private EmailVerificationResponse toEmailVerificationResponse(AuthLoginResponse response) {
+        return new EmailVerificationResponse(
+            response.message(),
+            response.email(),
+            response.role(),
+            response.emailVerified(),
+            response.emailVerifiedAt(),
+            response.id(),
+            response.name(),
+            response.username(),
+            response.phone(),
+            response.specialization(),
+            response.experience(),
+            response.age(),
+            response.loginCount(),
+            response.accessToken(),
+            response.profileCompleted()
+        );
     }
 
     private Role parseRole(String roleValue) {
