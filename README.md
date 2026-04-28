@@ -76,7 +76,7 @@ Authorization: Bearer <accessToken>
 
 ## Local Startup
 
-The backend now uses a single runtime config file: `src/main/resources/application.yml`.
+The backend now uses a single runtime config file: `src/main/resources/application.properties`.
 Local startup uses MySQL, so data is stored in the `poshan` schema and visible in MySQL Workbench.
 
 1. If needed, set your local MySQL credentials:
