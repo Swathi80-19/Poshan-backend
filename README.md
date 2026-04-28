@@ -27,7 +27,7 @@ Standalone Spring Boot backend for the Poshan frontend.
 Set this in the frontend `.env`:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8080/api
+VITE_API_BASE_URL=http://localhost:8080
 ```
 
 ## Core Endpoints
@@ -95,7 +95,6 @@ $env:MAIL_USERNAME="your_email@gmail.com"
 $env:MAIL_PASSWORD="your_app_password"
 $env:MAIL_FROM="your_email@gmail.com"
 $env:FRONTEND_BASE_URL="http://localhost:5173"
-$env:BACKEND_BASE_URL="http://localhost:8080"
 ```
 
 For Gmail, use an App Password instead of your normal mailbox password.
@@ -122,7 +121,6 @@ SPRING_DATASOURCE_USERNAME=<database-user>
 SPRING_DATASOURCE_PASSWORD=<database-password>
 CORS_ALLOWED_ORIGINS=https://<your-frontend>.vercel.app
 FRONTEND_BASE_URL=https://<your-frontend>.vercel.app
-BACKEND_BASE_URL=https://<your-backend>.onrender.com
 ```
 
 Use the internal connection details from your Render Postgres dashboard when the web service and database are in the same region.
@@ -130,6 +128,6 @@ Use the internal connection details from your Render Postgres dashboard when the
 ## Email Verification Flow
 
 - New member and nutritionist accounts are created as unverified.
-- Registration sends a real email verification link through SMTP.
+- Registration sends a real email verification link through SMTP to the deployed frontend `/verify-email` page.
 - Login is blocked until that email link is opened successfully.
 - Users can request a fresh verification email from the frontend verification screen.
