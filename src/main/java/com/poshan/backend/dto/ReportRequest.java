@@ -13,6 +13,10 @@ public record ReportRequest(
     LocalDate sessionDate,
     String clinicalNote,
     String recommendations,
-    List<String> goalsMet
+    List<String> goalsMet,
+    String attachmentFileName,
+    String attachmentContentType,
+    Long attachmentSize,
+    String attachmentBase64
 ) {
 }

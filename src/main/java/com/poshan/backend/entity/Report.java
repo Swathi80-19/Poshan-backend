@@ -4,6 +4,7 @@ import jakarta.persistence.CollectionTable;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -31,6 +32,12 @@ public class Report extends BaseEntity {
     private LocalDate sessionDate;
     private String clinicalNote;
     private String recommendations;
+    private String attachmentFileName;
+    private String attachmentContentType;
+    private Long attachmentSize;
+
+    @Lob
+    private byte[] attachmentData;
 
     @ElementCollection
     @CollectionTable(name = "report_goals_met", joinColumns = @JoinColumn(name = "report_id"))

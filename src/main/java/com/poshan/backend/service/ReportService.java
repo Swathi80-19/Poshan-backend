@@ -5,6 +5,7 @@ import com.poshan.backend.dto.ReportResponse;
 import com.poshan.backend.entity.Member;
 import com.poshan.backend.entity.Nutritionist;
 import com.poshan.backend.entity.Report;
+import java.util.Base64;
 import com.poshan.backend.repository.MemberRepository;
 import com.poshan.backend.repository.NutritionistRepository;
 import com.poshan.backend.repository.ReportRepository;
@@ -47,6 +48,10 @@ public class ReportService {
         report.setClinicalNote(request.clinicalNote());
         report.setRecommendations(request.recommendations());
         report.setGoalsMet(request.goalsMet() != null ? request.goalsMet() : List.of());
+        report.setAttachmentFileName(normalizeOptionalValue(request.attachmentFileName()));
+        report.setAttachmentContentType(normalizeOptionalValue(request.attachmentContentType()));
+        report.setAttachmentSize(request.attachmentSize());
+        report.setAttachmentData(decodeAttachment(request.attachmentBase64()));
         return toResponse(reportRepository.save(report));
     }
 
@@ -54,6 +59,17 @@ public class ReportService {
         return reportRepository.findAllByNutritionistIdOrderBySessionDateDesc(nutritionistId).stream()
             .map(this::toResponse)
             .toList();
+    }
+
+    public Report getAttachment(Long nutritionistId, Long reportId) {
+        Report report = reportRepository.findByIdAndNutritionistId(reportId, nutritionistId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Report not found"));
+
+        if (report.getAttachmentData() == null || report.getAttachmentData().length == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No file is attached to this report.");
+        }
+
+        return report;
     }
 
     private ReportResponse toResponse(Report report) {
@@ -70,7 +86,32 @@ public class ReportService {
             report.getSessionDate(),
             report.getClinicalNote(),
             report.getRecommendations(),
-            report.getGoalsMet()
+            report.getGoalsMet(),
+            report.getAttachmentData() != null && report.getAttachmentData().length > 0,
+            report.getAttachmentFileName(),
+            report.getAttachmentContentType(),
+            report.getAttachmentSize()
         );
+    }
+
+    private byte[] decodeAttachment(String attachmentBase64) {
+        if (attachmentBase64 == null || attachmentBase64.isBlank()) {
+            return null;
+        }
+
+        try {
+            return Base64.getDecoder().decode(attachmentBase64);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The uploaded report file could not be read.");
+        }
+    }
+
+    private String normalizeOptionalValue(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

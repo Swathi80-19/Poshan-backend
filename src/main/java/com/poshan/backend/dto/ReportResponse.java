@@ -16,6 +16,10 @@ public record ReportResponse(
     LocalDate sessionDate,
     String clinicalNote,
     String recommendations,
-    List<String> goalsMet
+    List<String> goalsMet,
+    boolean hasAttachment,
+    String attachmentFileName,
+    String attachmentContentType,
+    Long attachmentSize
 ) {
 }

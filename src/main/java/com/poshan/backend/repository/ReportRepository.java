@@ -10,5 +10,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
     List<Report> findAllByMemberIdOrderBySessionDateDesc(Long memberId);
 
+    java.util.Optional<Report> findByIdAndNutritionistId(Long id, Long nutritionistId);
+
     void deleteAllByMemberId(Long memberId);
 }
