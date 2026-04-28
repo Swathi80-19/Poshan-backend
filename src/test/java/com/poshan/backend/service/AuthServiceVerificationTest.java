@@ -19,6 +19,7 @@ import com.poshan.backend.repository.MemberProfileRepository;
 import com.poshan.backend.repository.MemberRepository;
 import com.poshan.backend.repository.NutritionistRepository;
 import com.poshan.backend.repository.PhoneLoginChallengeRepository;
+import com.poshan.backend.security.JwtService;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,7 @@ class AuthServiceVerificationTest {
     private MemberProfileRepository memberProfileRepository;
     private PhoneLoginChallengeRepository phoneLoginChallengeRepository;
     private VerificationEmailService verificationEmailService;
+    private JwtService jwtService;
     private AuthService authService;
 
     @BeforeEach
@@ -44,6 +46,8 @@ class AuthServiceVerificationTest {
         memberProfileRepository = mock(MemberProfileRepository.class);
         phoneLoginChallengeRepository = mock(PhoneLoginChallengeRepository.class);
         verificationEmailService = mock(VerificationEmailService.class);
+        jwtService = new JwtService("poshan-test-jwt-secret-change-this-before-production-123456789", 7);
+        jwtService.initialize();
 
         EmailVerificationProperties verificationProperties = new EmailVerificationProperties();
         verificationProperties.setTokenTtlMinutes(30);
@@ -57,6 +61,7 @@ class AuthServiceVerificationTest {
             verificationProperties,
             memberProfileRepository,
             phoneLoginChallengeRepository,
+            jwtService,
             10,
             true
         );

@@ -1,6 +1,7 @@
 package com.poshan.backend.entity;
 
 import com.poshan.backend.enums.Role;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -15,6 +16,7 @@ import lombok.Setter;
 @Entity
 public class AuthToken extends BaseEntity {
 
+    @Column(length = 2048, nullable = false)
     private String token;
 
     @Enumerated(EnumType.STRING)

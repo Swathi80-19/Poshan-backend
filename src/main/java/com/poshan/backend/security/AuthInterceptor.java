@@ -15,9 +15,11 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthInterceptor implements HandlerInterceptor {
 
     private final AuthTokenRepository authTokenRepository;
+    private final JwtService jwtService;
 
-    public AuthInterceptor(AuthTokenRepository authTokenRepository) {
+    public AuthInterceptor(AuthTokenRepository authTokenRepository, JwtService jwtService) {
         this.authTokenRepository = authTokenRepository;
+        this.jwtService = jwtService;
     }
 
     @Override
@@ -29,6 +31,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
 
         String tokenValue = authorization.substring(7).trim();
+        AuthPrincipal principal = jwtService.parseAccessToken(tokenValue);
         AuthToken authToken = authTokenRepository.findByTokenAndRevokedFalse(tokenValue)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"));
 
@@ -38,7 +41,12 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         Long id = authToken.getMember() != null ? authToken.getMember().getId() : authToken.getNutritionist().getId();
         String email = authToken.getMember() != null ? authToken.getMember().getEmail() : authToken.getNutritionist().getEmail();
-        request.setAttribute(AuthContext.REQUEST_PRINCIPAL_KEY, new AuthPrincipal(id, authToken.getRole(), email));
+
+        if (!principal.id().equals(id) || principal.role() != authToken.getRole() || !principal.email().equalsIgnoreCase(email)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+        }
+
+        request.setAttribute(AuthContext.REQUEST_PRINCIPAL_KEY, principal);
         return true;
     }
 }

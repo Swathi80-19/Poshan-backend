@@ -25,6 +25,7 @@ import com.poshan.backend.repository.MemberProfileRepository;
 import com.poshan.backend.repository.MemberRepository;
 import com.poshan.backend.repository.NutritionistRepository;
 import com.poshan.backend.repository.PhoneLoginChallengeRepository;
+import com.poshan.backend.security.JwtService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -47,6 +48,7 @@ public class AuthService {
     private final EmailVerificationProperties verificationProperties;
     private final MemberProfileRepository memberProfileRepository;
     private final PhoneLoginChallengeRepository phoneLoginChallengeRepository;
+    private final JwtService jwtService;
     private final int phoneOtpTtlMinutes;
     private final boolean exposePhoneOtpInResponse;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -60,6 +62,7 @@ public class AuthService {
         EmailVerificationProperties verificationProperties,
         MemberProfileRepository memberProfileRepository,
         PhoneLoginChallengeRepository phoneLoginChallengeRepository,
+        JwtService jwtService,
         @org.springframework.beans.factory.annotation.Value("${app.auth.phone-otp.token-ttl-minutes:10}") int phoneOtpTtlMinutes,
         @org.springframework.beans.factory.annotation.Value("${app.auth.phone-otp.expose-code-in-response:true}") boolean exposePhoneOtpInResponse
     ) {
@@ -71,6 +74,7 @@ public class AuthService {
         this.verificationProperties = verificationProperties;
         this.memberProfileRepository = memberProfileRepository;
         this.phoneLoginChallengeRepository = phoneLoginChallengeRepository;
+        this.jwtService = jwtService;
         this.phoneOtpTtlMinutes = phoneOtpTtlMinutes;
         this.exposePhoneOtpInResponse = exposePhoneOtpInResponse;
     }
@@ -413,12 +417,18 @@ public class AuthService {
     }
 
     private AuthToken issueToken(Member member, Nutritionist nutritionist, Role role) {
+        LocalDateTime expiresAt = jwtService.calculateAccessTokenExpiry();
         AuthToken authToken = new AuthToken();
-        authToken.setToken(UUID.randomUUID().toString().replace("-", ""));
+        authToken.setToken(jwtService.generateAccessToken(
+            member != null ? member.getId() : nutritionist.getId(),
+            member != null ? member.getEmail() : nutritionist.getEmail(),
+            role,
+            expiresAt
+        ));
         authToken.setRole(role);
         authToken.setMember(member);
         authToken.setNutritionist(nutritionist);
-        authToken.setExpiresAt(LocalDateTime.now().plusDays(7));
+        authToken.setExpiresAt(expiresAt);
         authToken.setRevoked(false);
         return authTokenRepository.save(authToken);
     }

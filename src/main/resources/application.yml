@@ -34,6 +34,9 @@ app:
   frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
   backend-base-url: ${BACKEND_BASE_URL:http://localhost:8080}
   auth:
+    jwt:
+      secret: ${JWT_SECRET:poshan-dev-jwt-secret-change-this-in-production-123456789}
+      access-token-ttl-days: ${JWT_ACCESS_TOKEN_TTL_DAYS:7}
     email-verification:
       from-address: ${MAIL_FROM:}
       token-ttl-minutes: ${EMAIL_VERIFICATION_TOKEN_TTL_MINUTES:30}

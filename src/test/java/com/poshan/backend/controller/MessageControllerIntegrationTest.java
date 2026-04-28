@@ -18,6 +18,7 @@ import com.poshan.backend.repository.AuthTokenRepository;
 import com.poshan.backend.repository.ChatMessageRepository;
 import com.poshan.backend.repository.MemberRepository;
 import com.poshan.backend.repository.NutritionistRepository;
+import com.poshan.backend.security.JwtService;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,9 @@ class MessageControllerIntegrationTest {
     @Autowired
     private NutritionistRepository nutritionistRepository;
 
+    @Autowired
+    private JwtService jwtService;
+
     @BeforeEach
     void setUp() {
         chatMessageRepository.deleteAll();
@@ -89,16 +93,28 @@ class MessageControllerIntegrationTest {
         appointment.setStatus(AppointmentStatus.UPCOMING);
         appointmentRepository.save(appointment);
 
+        String memberJwt = jwtService.generateAccessToken(
+            member.getId(),
+            member.getEmail(),
+            Role.MEMBER,
+            LocalDateTime.now().plusDays(1)
+        );
         AuthToken memberToken = new AuthToken();
-        memberToken.setToken("member-token");
+        memberToken.setToken(memberJwt);
         memberToken.setRole(Role.MEMBER);
         memberToken.setMember(member);
         memberToken.setExpiresAt(LocalDateTime.now().plusDays(1));
         memberToken.setRevoked(false);
         authTokenRepository.save(memberToken);
 
+        String nutritionistJwt = jwtService.generateAccessToken(
+            nutritionist.getId(),
+            nutritionist.getEmail(),
+            Role.NUTRITIONIST,
+            LocalDateTime.now().plusDays(1)
+        );
         AuthToken nutritionistToken = new AuthToken();
-        nutritionistToken.setToken("nutritionist-token");
+        nutritionistToken.setToken(nutritionistJwt);
         nutritionistToken.setRole(Role.NUTRITIONIST);
         nutritionistToken.setNutritionist(nutritionist);
         nutritionistToken.setExpiresAt(LocalDateTime.now().plusDays(1));
@@ -106,20 +122,20 @@ class MessageControllerIntegrationTest {
         authTokenRepository.save(nutritionistToken);
 
         mockMvc.perform(post("/api/messages/member/" + nutritionist.getId())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer member-token")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + memberJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"text\":\"Hello doctor\"}"))
             .andExpect(status().isForbidden());
 
         mockMvc.perform(put("/api/messages/nutritionist/" + member.getId() + "/chat-access")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer nutritionist-token")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + nutritionistJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"unlocked\":true}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.chatUnlocked").value(true));
 
         mockMvc.perform(post("/api/messages/member/" + nutritionist.getId())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer member-token")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + memberJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"text\":\"Hello doctor\"}"))
             .andExpect(status().isOk())
@@ -127,14 +143,14 @@ class MessageControllerIntegrationTest {
             .andExpect(jsonPath("$.text").value("Hello doctor"));
 
         mockMvc.perform(post("/api/messages/nutritionist/" + member.getId())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer nutritionist-token")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + nutritionistJwt)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"text\":\"Hi Riya, I can see your booking.\"}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.senderRole").value("NUTRITIONIST"));
 
         mockMvc.perform(get("/api/messages/member/" + nutritionist.getId())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer member-token"))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + memberJwt))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.counterpartName").value("Asha Menon"))
             .andExpect(jsonPath("$.chatUnlocked").value(true))
@@ -143,7 +159,7 @@ class MessageControllerIntegrationTest {
             .andExpect(jsonPath("$.messages[1].text").value("Hi Riya, I can see your booking."));
 
         mockMvc.perform(get("/api/messages/nutritionist/" + member.getId())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer nutritionist-token"))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + nutritionistJwt))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.counterpartName").value("Riya Shah"))
             .andExpect(jsonPath("$.messages.length()").value(2))
@@ -151,7 +167,7 @@ class MessageControllerIntegrationTest {
             .andExpect(jsonPath("$.messages[1].senderRole").value("NUTRITIONIST"));
 
         mockMvc.perform(get("/api/messages/nutritionist")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer nutritionist-token"))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + nutritionistJwt))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].counterpartName").value("Riya Shah"))
             .andExpect(jsonPath("$[0].chatUnlocked").value(true))

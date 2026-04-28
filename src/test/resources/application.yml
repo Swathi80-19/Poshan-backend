@@ -17,3 +17,9 @@ spring:
 
 server:
   port: 0
+
+app:
+  auth:
+    jwt:
+      secret: poshan-test-jwt-secret-change-this-before-production-123456789
+      access-token-ttl-days: 7
