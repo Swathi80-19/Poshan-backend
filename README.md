@@ -30,6 +30,34 @@ Set this in the frontend `.env`:
 VITE_API_BASE_URL=http://localhost:8080
 ```
 
+## API Docs
+
+Once the backend is running, Swagger UI is available at:
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+The generated OpenAPI JSON is available at:
+
+```text
+http://localhost:8080/v3/api-docs
+```
+
+For your deployed setup, open the same paths on your Render backend domain:
+
+```text
+https://<your-backend>.onrender.com/swagger-ui.html
+https://<your-backend>.onrender.com/v3/api-docs
+```
+
+If the backend uses the default Render domain, the OpenAPI `servers` entry now picks it up automatically from Render's `RENDER_EXTERNAL_URL`.
+If you use a custom backend domain instead, set:
+
+```text
+BACKEND_BASE_URL=https://api.yourdomain.com
+```
+
 ## Core Endpoints
 
 - `POST /api/auth/members/register`
@@ -121,6 +149,7 @@ SPRING_DATASOURCE_USERNAME=<database-user>
 SPRING_DATASOURCE_PASSWORD=<database-password>
 CORS_ALLOWED_ORIGINS=https://<your-frontend>.vercel.app
 FRONTEND_BASE_URL=https://<your-frontend>.vercel.app
+BACKEND_BASE_URL=https://<your-backend>.onrender.com
 ```
 
 Use the internal connection details from your Render Postgres dashboard when the web service and database are in the same region.
